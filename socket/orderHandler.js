@@ -1,9 +1,9 @@
-import { getCollection } from "../config/database";
+import { getCollection } from "../config/database.js";
 import {
   calculateTotals,
   createOrderDocument,
   generateOrderId,
-} from "../utils/helper";
+} from "../utils/helper.js";
 
 export const orderHandler = (io, socket) => {
   console.log("a user connected", socket.io);
@@ -37,4 +37,24 @@ export const orderHandler = (io, socket) => {
       callback({ success: false, message: "Failed to place order..." });
     }
   });
+
+  //   track order
+  socket.on("trackOrder", async (data, callback) => {
+    try {
+      const ordersCollection = getCollection("orders");
+      const order = await ordersCollection.findOne({ orderId: data.orderId });
+      if (!order) {
+        return callback({ success: false, message: "Order not found" });
+      }
+
+      socket.join(`order-${data.orderId}`);
+      callback({ success: true, order });
+    } catch (error) {
+      console.error("Order Tracking error", error);
+      callback({ success: false, message: error.message });
+    }
+  });
+
+  //   cancle order
+  
 };
