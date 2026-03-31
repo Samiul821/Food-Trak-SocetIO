@@ -7,6 +7,8 @@ import cors from "cors";
 import { connectDB, getCollection, closeDB } from "./config/database.js";
 import { Server } from "socket.io";
 import http from "http";
+import { orderHandler } from "./socket/orderHandler.js";
+import { generateOrderId } from "./utils/helper.js";
 
 // Load environment variables
 dotenv.config();
@@ -24,8 +26,11 @@ io.on("connection", (socket) => {
   console.log("a user connected", socket.id);
   socket.emit("connected", { message: `User ${socket.id} connected` });
 
+  // orderId
+  console.log(generateOrderId());
+
   // for handling the orders
-  orderHandler(io, socket)
+  orderHandler(io, socket);
 });
 
 // Middleware

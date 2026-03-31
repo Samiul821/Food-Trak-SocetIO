@@ -1,4 +1,11 @@
-const orderHandler = (io, socket) => {
+import { getCollection } from "../config/database";
+import {
+  calculateTotals,
+  createOrderDocument,
+  generateOrderId,
+} from "../utils/helper";
+
+export const orderHandler = (io, socket) => {
   console.log("a user connected", socket.io);
 
   //   emit -> trigger -> on -> listen
@@ -8,8 +15,26 @@ const orderHandler = (io, socket) => {
     try {
       console.log(`Placed Order from ${socket.id}`);
       const validation = validateOrder(data);
+      if (!validation.valid) {
+        return callback({ success: false, message: validation.message });
+      }
+      const totals = calculateTotals(data.items);
+      const orderId = generateOrderId();
+      const order = createOrderDocument(data, orderId, totals);
+
+      const ordersCollection = getCollection("orders");
+      await ordersCollection.insertOne(order);
+
+      socket.join(`order-${orderId}`);
+      socket.join("customers");
+
+      io.to("admins").emit("newOrder", { order });
+
+      callback({ success: true, order });
+      console.log(`order created: ${orderId}`);
     } catch (error) {
       console.log(error);
+      callback({ success: false, message: "Failed to place order..." });
     }
   });
 };
