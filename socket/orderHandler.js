@@ -158,6 +158,7 @@ export const orderHandler = (io, socket) => {
     }
   });
 
+  // order Status update
   socket.on("updateOrderStatus", async (data, callback) => {
     try {
       const orderCollection = getCollection("orders");
@@ -205,5 +206,47 @@ export const orderHandler = (io, socket) => {
     } catch (error) {
       callback({ success: false, message: "failed ot update order status" });
     }
+  });
+
+  // accept order
+  socket.on("acceptOrder", async (data, callback) => {
+    try {
+      if (!socket.isAdmin) {
+        return callback({ success: false, message: "Unauthorized" });
+      }
+      const orderCollection = getCollection("orders");
+      const order = await orderCollection.findOne({ orderId: data.orderId });
+
+      if (!order || order.status !== "pending") {
+        return callback({
+          success: false,
+          message: "can not accept this order",
+        });
+      }
+
+      const estimatedTime = data.estimatedTime || 30;
+
+      const result = await orderCollection.findOneAndUpdate(
+        { orderId: data.orderId },
+        {
+          $set: { status: "confirmed", estimatedTime, updatedAt: new Date() },
+          $push: {
+            statusHistory: {
+              status: "confirmed",
+              timestamp: new Date(),
+              by: socket.id,
+              note: `Accepted with ${estimatedTime} min esitmated time`,
+            },
+          },
+        },
+        {
+          returnDocument: "after",
+        },
+      );
+
+     io.to(`order-${data.orderId}`).emit('orderAcceptet', {orderId: data.orderId, estimatedTime});
+     socket.on('admins').emit("orderAcceptedByAdmin")
+
+    } catch (error) {}
   });
 };
