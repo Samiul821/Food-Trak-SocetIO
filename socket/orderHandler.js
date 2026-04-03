@@ -3,6 +3,7 @@ import {
   calculateTotals,
   createOrderDocument,
   generateOrderId,
+  isValidStatusTransition,
 } from "../utils/helper.js";
 
 export const orderHandler = (io, socket) => {
@@ -153,7 +154,56 @@ export const orderHandler = (io, socket) => {
 
       callback({ success: true, orders });
     } catch (error) {
-      callback({ success: false, message: "failed ot load orders" });
+      callback({ success: false, message: "failed to load orders" });
+    }
+  });
+
+  socket.on("updateOrderStatus", async (data, callback) => {
+    try {
+      const orderCollection = getCollection("orders");
+      const order = await orderCollection.findOne({ orderId: data.orderId });
+      if (!order) {
+        return callback({ success: false, message: "Order not found" });
+      }
+      if (!isValidStatusTransition(order.status, data.newStatus)) {
+        return callback({
+          success: false,
+          message: "Invalid status transition",
+        });
+      }
+
+      const result = await orderCollection.findOneAndUpdate(
+        {
+          orderId: data.orderId,
+        },
+        {
+          $set: { status: data.newStatus, updatedAt: new Date() },
+          $push: {
+            statusHistory: {
+              status: data.newStatus,
+              timestamp: new Date(),
+              by: socket.id,
+              note: "Status Updated by admin",
+            },
+          },
+        },
+        { returnDocument: "after" },
+      );
+
+      io.to(`order-${data.orderId}`).emit("statusUpdated", {
+        orderId: data.orderId,
+        status: data.newStatus,
+        order: result,
+      });
+
+      socket.to("admin").emit("orderStatusChanged", {
+        orderId: data.orderId,
+        newStatus: data.newStatus,
+      });
+
+      callback({ success: true, order: result });
+    } catch (error) {
+      callback({ success: false, message: "failed ot update order status" });
     }
   });
 };
