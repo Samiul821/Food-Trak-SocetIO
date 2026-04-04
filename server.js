@@ -1,5 +1,5 @@
 // server.js
-// Main server file - Express + MongoDB (Socket.IO will be added in videos)
+// Main server file - Express + MongoDB
 
 import dotenv from "dotenv";
 import express from "express";
@@ -9,6 +9,7 @@ import { Server } from "socket.io";
 import http from "http";
 import { orderHandler } from "./socket/orderHandler.js";
 import { generateOrderId } from "./utils/helper.js";
+import console from "console";
 
 // Load environment variables
 dotenv.config();
@@ -26,15 +27,14 @@ io.on("connection", (socket) => {
   console.log("a user connected", socket.id);
   socket.emit("connected", { message: `User ${socket.id} connected` });
 
-  // orderId
+  //orderid
   console.log(generateOrderId());
-
   // for handling the orders
   orderHandler(io, socket);
 });
 
 // Middleware
-app.use(cors({ origin: process.env.CLIENT_URL || "*", credentials: true }));
+app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
