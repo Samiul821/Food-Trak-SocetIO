@@ -258,3 +258,49 @@ export const orderHandler = (io, socket) => {
     }
   });
 };
+
+// reject order
+socket.on("rejectOrder", async (data, callback) => {
+  try {
+    if (!socket.isAdmin) {
+      return callback({ success: false, message: "Unauthorized" });
+    }
+    const orderCollection = getCollection("orders");
+    const order = await orderCollection.findOne({ orderId: data.orderId });
+
+    if (!order || order.status !== "pending") {
+      return callback({
+        success: false,
+        message: "can not reject this order",
+      });
+    }
+
+    const result = await orderCollection.findOneAndUpdate(
+      { orderId: data.orderId },
+      {
+        $set: { status: "cancelled", estimatedTime, updatedAt: new Date() },
+        $push: {
+          statusHistory: {
+            status: "cancelled",
+            timestamp: new Date(),
+            by: socket.id,
+            note: `Rejected`,
+          },
+        },
+      },
+      {
+        returnDocument: "after",
+      },
+    );
+
+    io.to(`order-${data.orderId}`).emit("orderRejected", {
+      orderId: data.orderId,
+      reason: data.reason,
+    });
+    socket.on("admins").emit("orderRejectedByAdmin", { reason: data.reason });
+
+    callback({ success: true });
+  } catch (error) {
+    callback({ success: false, message: "Failed to reject order" });
+  }
+});
