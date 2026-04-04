@@ -244,9 +244,17 @@ export const orderHandler = (io, socket) => {
         },
       );
 
-     io.to(`order-${data.orderId}`).emit('orderAcceptet', {orderId: data.orderId, estimatedTime});
-     socket.on('admins').emit("orderAcceptedByAdmin")
+      io.to(`order-${data.orderId}`).emit("orderAcceptet", {
+        orderId: data.orderId,
+        estimatedTime,
+      });
+      socket
+        .on("admins")
+        .emit("orderAcceptedByAdmin", { orderId: data.orderId });
 
-    } catch (error) {}
+      callback({ success: true, order: result });
+    } catch (error) {
+      callback({ success: false, message: error.message });
+    }
   });
 };
