@@ -12,7 +12,7 @@ let db = null;
 export const connectDB = async () => {
   try {
     // Create MongoDB client
-    client = new MongoClient(process.env.MONGODB_URI);
+    client = new MongoClient(process.env.MONGO_URI);
     
     // Connect to database
     await client.connect();
