@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import ConnectionStatus from '../common/ConnectionStatus';
+import ConnectionStatus from '../common/ConnectioinStatus';
 
 const AdminLogin = ({ socket, onLoginSuccess, onShowNotification }) => {
   const [password, setPassword] = useState('');

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import OrderCard from "./OrderCard";
 import OrderDetail from "./OrderDetail";
-import ConnectionStatus from "../common/ConnectionStatus";
+import ConnectionStatus from "../common/ConnectioinStatus";
 
 const AdminDashboard = ({ socket, onShowNotification, onLogout }) => {
   const [orders, setOrders] = useState([]);
